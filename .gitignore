@@ -13,3 +13,39 @@ Thumbs.db
 /.vscode
 /.settings
 
+# 目录忽略
+/.idea
+/.vscode
+/.settings
+/.vs
+/.nbproject
+/bin/
+/obj/
+/build/
+/dist/
+/out/
+/target/
+/node_modules/
+/bower_components/
+/.sass-cache/
+/__pycache__/
+/.venv/
+/venv/
+/env/
+/.env
+/.cache
+/.pytest_cache/
+/.mypy_cache/
+
+
+## 日志文件
+*.log
+
+# 开发环境
+.env.local
+.env.development
+.env.test
+.env.production
+.venv
+.envrc
+.terraform/
