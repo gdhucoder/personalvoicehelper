@@ -1,8 +1,21 @@
 import pvporcupine
 import pyaudio
 import struct
+import configparser
 
-porcupine = pvporcupine.create(keyword_paths=None, keywords=["picovoice"], access_key="你的AccessKey")
+# config parser
+config = configparser.ConfigParser()
+# load config
+config.read('../env/config.ini')
+
+porcupine_access_key = config.get('listener', 'pvporcupine_access_key') # key
+
+custom_keyword_franky_path = config.get('listener', 'custom_keyword_franky')
+
+porcupine = pvporcupine.create(keyword_paths=[custom_keyword_franky_path],
+                               keywords=["franky"],
+                               access_key=porcupine_access_key,
+                               sensitivities=[0.7])
 
 pa = pyaudio.PyAudio()
 
