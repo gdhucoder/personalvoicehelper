@@ -1,0 +1,18 @@
+# 通用忽略规则
+*.log
+*.tmp
+*.swp
+*.bak
+*.DS_Store
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+Thumbs.db
+
+
+# 目录忽略
+/.idea
+/.vscode
+/.settings
+
