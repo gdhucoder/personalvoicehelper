@@ -2,6 +2,9 @@ import pvporcupine
 import pyaudio
 import struct
 import configparser
+from datetime import datetime
+
+
 
 # config parser
 config = configparser.ConfigParser()
@@ -34,8 +37,13 @@ try:
         pcm = struct.unpack_from("h" * porcupine.frame_length, pcm)
 
         result = porcupine.process(pcm)
+
         if result >= 0:
-            print("🔔 唤醒词检测到！执行唤醒动作...")
+            # 获取当前日期和时间
+            now = datetime.now()
+            # 格式化为字符串
+            formatted_date = now.strftime("%Y-%m-%d %H:%M:%S")
+            print(f'🔔{formatted_date} 唤醒词检测到！执行唤醒动作...')
             # 调用你助手的主逻辑模块
 except KeyboardInterrupt:
     print("关闭中...")

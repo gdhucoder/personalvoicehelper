@@ -1,0 +1,24 @@
+flowchart TD
+  A[🔊 Microphone 输入] --> B[🎧 Listener 持续监听]
+  B --> C{👂 唤醒词检测<br>Porcupine}
+  C -- 唤醒成功 --> D[🗣️ 语音识别 ASR<br>Whisper / Vosk]
+  D --> E[🧩 命令解析器<br>NLU 模块]
+  E --> F{任务类型识别}
+
+  F --> F1[📻 播放音乐]
+  F --> F2[🔔 设置提醒]
+  F --> F3[🌤️ 查询天气]
+  F --> F4[💬 TTS播报]
+  F --> F5[📁 自定义任务]
+
+  F1 --> G[🎯 任务调度器 Dispatcher]
+  F2 --> G
+  F3 --> G
+  F4 --> G
+  F5 --> G
+
+  G --> H[🧵 任务执行流<br>Task Flow Manager]
+  H --> I[🎚️ 音频调度器<br>抢占式播放控制器]
+
+  I --> J1[🎵 MP3 播放]
+  I --> J2[📢 TTS播放]
