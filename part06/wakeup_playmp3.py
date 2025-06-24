@@ -7,8 +7,9 @@ from datetime import datetime
 import asyncio
 import threading
 import time
+from pathlib import Path
 # 来自前面示例
-from voice_assistant.tasks.task_manager2 import AudioScheduler, MusicTask,TTSTask
+from voice_assistant.tasks.task_manager3 import AudioScheduler, PlayMusicTask
 # config parser
 config = configparser.ConfigParser()
 # load config
@@ -53,13 +54,26 @@ def wake_and_recognize(loop: asyncio.AbstractEventLoop, scheduler: AudioSchedule
                 print(f'🔔{formatted_date} 唤醒词检测到！执行唤醒动作...')
                 # 调用你助手的主逻辑模块
                 # 简单命令解析 —— 播放音乐
-                recognized_text = "tts"
-                if "play" in recognized_text or "音乐" in recognized_text:
+                text = "play"
+                if "play" in text or "音乐" in text:
                     # 在 asyncio 调度器中创建任务
                     # 安全地把 MusicTask 加入主线程的 asyncio 调度器
-                    loop.call_soon_threadsafe(scheduler.enqueue, MusicTask(ticks=20))
-                if "tts" in recognized_text:
-                    loop.call_soon_threadsafe(scheduler.enqueue, TTSTask("Hello, how can I help you?"))
+                    loop.call_soon_threadsafe(scheduler.enqueue, PlayMusicTask(Path("../voice_assistant/mp3s")))
+                elif "暂停" in text or "pause" in text:
+                    if isinstance(scheduler.running, PlayMusicTask):
+                        scheduler.running.cmd_pause()
+                elif "继续" in text or "resume" in text:
+                    if isinstance(scheduler.running, PlayMusicTask):
+                        scheduler.running.cmd_resume()
+                elif "下一曲" in text or "next" in text:
+                    if isinstance(scheduler.running, PlayMusicTask):
+                        scheduler.running.cmd_next()
+                elif "上一曲" in text or "previous" in text:
+                    if isinstance(scheduler.running, PlayMusicTask):
+                        scheduler.running.cmd_prev()
+                elif "停止" in text or "stop" in text:
+                    if isinstance(scheduler.running, PlayMusicTask):
+                        scheduler.running.cmd_stop()
                 time.sleep(1)
 
     except KeyboardInterrupt:
