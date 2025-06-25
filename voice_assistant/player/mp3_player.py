@@ -136,12 +136,44 @@ class MP3Player:
             self.offset_ms = current_offset
             self._start_play(self.offset_ms)
 
+    # ------------ 新增：播放单次文件（用于 TTS） ------------
+    def play_file(self, path: Path, wait: bool = False, resume_playlist: bool = True):
+        """
+        播放一个单独的 mp3 文件（如 TTS 结果），播放结束后可恢复原歌单。
+        :param path: mp3 文件路径
+        :param wait: True 时阻塞直到播放结束
+        :param resume_playlist: True 时播放完毕后继续歌单
+        """
+
+        def _play_once():
+            # 暂停/停止当前歌单
+            with self.lock:
+                playing = self.play_obj and self.play_obj.is_playing()
+                if playing:
+                    self.play_obj.stop()
+            # 播放 TTS 文件
+            seg = AudioSegment.from_file(path) + self.vol_db
+            play_obj = sa.play_buffer(
+                seg.raw_data,
+                num_channels=seg.channels,
+                bytes_per_sample=seg.sample_width,
+                sample_rate=seg.frame_rate,
+            )
+            print(f"▶️ Now Playing {path.name}")
+            play_obj.wait_done()
+            # 恢复歌单
+            if resume_playlist and playing:
+                self.play()
+
+        # 后台线程播放，避免阻塞
+        threading.Thread(target=_play_once, daemon=True).start()
+
 
 if __name__ == "__main__":
     mp3_paths = list(Path("../mp3s").glob("*.mp3"))   # 把 mp3 放这个目录
     player = MP3Player(mp3_paths, loop=True)
 
-    print("Commands: p=play, s=pause, r=resum, n=next, b=prev, +=vol+, -=vol-, q=quit")
+    print("Commands: p=play, s=pause, r=resum, n=next, b=prev, t=playtts, +=vol+, -=vol-, q=quit")
     while True:
         cmd = input(">> ").strip().lower()
         if cmd == "p":
@@ -158,6 +190,10 @@ if __name__ == "__main__":
             player.set_volume(+3)      # 每次 +3dB
         elif cmd == "-":
             player.set_volume(-3)
+        elif cmd == "t":
+            # ... 程序运行中，当拿到 TTS 生成的 mp3 路径后：
+            tts_path = Path("/home/hugd/privateprojects/personalvoicehelper/voice_assistant/resource/common_tts/loongstella/好的.mp3")
+            player.play_file(tts_path, resume_playlist=True)
         elif cmd == "q":
             player.stop_flag = True
             player.stop()

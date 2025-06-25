@@ -99,7 +99,10 @@ class PlayMusicTask(AsyncVoiceTask):
                 return
             if self._paused_event.is_set():
                 self.player.pause()
-                await self._paused_event.wait()
+                # 等待 paused_event 被 clear()（即收到 resume 命令）
+                while self._paused_event.is_set():
+                    await asyncio.sleep(0.1)
+                # 清除后恢复播放
                 self.player.play()
             await asyncio.sleep(0.1)
 
@@ -108,7 +111,11 @@ class PlayMusicTask(AsyncVoiceTask):
     def cmd_resume(self):   asyncio.create_task(self.resume())
     def cmd_next(self):     self.player.next()
     def cmd_prev(self):     self.player.prev()
-    def cmd_stop(self):     asyncio.create_task(self.cancel())
+    def cmd_stop(self):
+        # 1) 同步先停掉播放器s
+        self.player.stop()
+        # 2) 返回 cancel() 协程，供外部调度
+        return self.cancel()
 
     def cmd_vol_up(self, db: int = 3):
         """每次提升 db dB"""
