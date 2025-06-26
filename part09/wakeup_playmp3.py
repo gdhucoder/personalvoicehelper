@@ -71,32 +71,24 @@ def wake_and_recognize(loop: asyncio.AbstractEventLoop, scheduler: AudioSchedule
                     loop.call_soon_threadsafe(scheduler.enqueue, PlayMusicTask())
                 elif "暂停" in text or "pause" in text:
                     # 在主循环里创建一个 pause() 的协程任务
-                    if isinstance(scheduler.running, PlayMusicTask):
-                        loop.call_soon_threadsafe(asyncio.create_task,
-                                              scheduler.running.pause())
+                    # 直接暂停播放器
+                    loop.call_soon_threadsafe(scheduler.pause_music)
                 elif "继续" in text or "resume" in text:
-                    if isinstance(scheduler.running, PlayMusicTask):
-                        loop.call_soon_threadsafe(
-                            asyncio.create_task,
-                            scheduler.running.resume()
-                        )
+                    loop.call_soon_threadsafe(scheduler.resume_music)
                 elif "下一曲" in text or "next" in text:
-                    if isinstance(scheduler.running, PlayMusicTask):
-                        scheduler.running.cmd_next()
+                    loop.call_soon_threadsafe(scheduler.next_track)
                 elif "上一曲" in text or "previous" in text:
-                    if isinstance(scheduler.running, PlayMusicTask):
-                        scheduler.running.cmd_prev()
+                    loop.call_soon_threadsafe(scheduler.prev_track)
                 elif "停止" in text or "stop" in text:
-                    if isinstance(scheduler.running, PlayMusicTask):
-                        loop.call_soon_threadsafe(
-                            asyncio.create_task,
-                            scheduler.running.cmd_stop()
-                        )
+                    # 停掉任务并停止播放器
+                    loop.call_soon_threadsafe(scheduler.audio_player.pause_music)
                 elif "天气" in text or "weather" in text:
                     # 将 WeatherTask 加入调度器
+                    was_playing = scheduler.audio_player.play_obj and scheduler.audio_player.play_obj.is_playing()
+                    print(f"was_playing: {was_playing}")
                     loop.call_soon_threadsafe(
                         scheduler.enqueue,
-                        WeatherTask()
+                        WeatherTask(was_playing=was_playing)
                     )
                 time.sleep(1)
 

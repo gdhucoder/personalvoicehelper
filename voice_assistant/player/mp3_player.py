@@ -20,6 +20,8 @@ class MP3Player:
         self._monitor_th: Optional[threading.Thread] = None
         self._monitor_stop: bool = False
         self.lock = threading.Lock()
+        # 新增：专门标记歌单是否在“激活”状态
+        self._playlist_active = False
 
     # ------------ 内部方法 ------------
     def _load_segment(self) -> AudioSegment:
@@ -75,12 +77,15 @@ class MP3Player:
         with self.lock:
             if self.play_obj and self.play_obj.is_playing():
                 return
+            self._playlist_active = True
             self._start_play(self.offset_ms)
 
     def pause(self):
         with self.lock:
             if not self.play_obj or self.paused:
                 return
+            # 标记歌单未激活（即暂停状态）
+            self._playlist_active = False
             try:
                 elapsed_ms = int(self.play_obj.get_time() * 1000)
             except AttributeError:
@@ -92,6 +97,8 @@ class MP3Player:
 
     def stop(self):
         with self.lock:
+            # 标记歌单未激活
+            self._playlist_active = False
             if self.play_obj:
                 self.play_obj.stop()
             self.play_obj = None
@@ -137,21 +144,64 @@ class MP3Player:
             self._start_play(self.offset_ms)
 
     # ------------ 新增：播放单次文件（用于 TTS） ------------
-    def play_file(self, path: Path, wait: bool = False, resume_playlist: bool = True):
+    # def play_file(self, path: Path, wait: bool = False, resume_playlist: bool = True):
+    #     """
+    #     播放一个单独的 mp3 文件（如 TTS 结果），播放结束后可恢复原歌单。
+    #     :param path: mp3 文件路径
+    #     :param wait: True 时阻塞直到播放结束
+    #     :param resume_playlist: True 时播放完毕后继续歌单
+    #     """
+    #
+    #     def _play_once():
+    #         # 暂停/停止当前歌单
+    #         with self.lock:
+    #             playing = self.play_obj and self.play_obj.is_playing()
+    #             if playing:
+    #                 self.play_obj.stop()
+    #         # 播放 TTS 文件
+    #         seg = AudioSegment.from_file(path) + self.vol_db
+    #         play_obj = sa.play_buffer(
+    #             seg.raw_data,
+    #             num_channels=seg.channels,
+    #             bytes_per_sample=seg.sample_width,
+    #             sample_rate=seg.frame_rate,
+    #         )
+    #         print(f"▶️ Now Playing {path.name}")
+    #         play_obj.wait_done()
+    #         # 恢复歌单
+    #         if resume_playlist and playing:
+    #             self.play()
+    #
+    #     # 后台线程播放，避免阻塞
+    #     threading.Thread(target=_play_once, daemon=True).start()
+
+    def play_file(self, was_playing:bool, path: Path, resume_playlist: bool = True):
         """
-        播放一个单独的 mp3 文件（如 TTS 结果），播放结束后可恢复原歌单。
-        :param path: mp3 文件路径
-        :param wait: True 时阻塞直到播放结束
-        :param resume_playlist: True 时播放完毕后继续歌单
+        播放单个 mp3（如 TTS），播放完毕后仅在：
+          1) resume_playlist=True
+          2) 调用前 _playlist_active==True
+        时恢复歌单。
         """
 
         def _play_once():
-            # 暂停/停止当前歌单
+            # 1) 记录调用前歌单激活状态，杀死旧监控并停止当前播放
             with self.lock:
-                playing = self.play_obj and self.play_obj.is_playing()
-                if playing:
+                was_active = was_playing
+                print(f"[play_file lock] was_active={was_active}")
+                # 停监控
+                self._monitor_stop = True
+                if self._monitor_th and self._monitor_th.is_alive():
+                    old = self._monitor_th
+                    if old is not threading.current_thread():
+                        old.join(timeout=0.1)
+                # 停当前播放
+                if self.play_obj:
                     self.play_obj.stop()
-            # 播放 TTS 文件
+                    self.play_obj = None
+
+            print(f"[play_file] was_active={was_active}, resume_playlist={resume_playlist}")
+
+            # 2) 播放 TTS
             seg = AudioSegment.from_file(path) + self.vol_db
             play_obj = sa.play_buffer(
                 seg.raw_data,
@@ -159,13 +209,17 @@ class MP3Player:
                 bytes_per_sample=seg.sample_width,
                 sample_rate=seg.frame_rate,
             )
-            print(f"▶️ Now Playing {path.name}")
+            print(f"▶️ Now Playing (TTS): {path.name}")
             play_obj.wait_done()
-            # 恢复歌单
-            if resume_playlist and playing:
-                self.play()
+            print(f"▶️ TTS done: {path.name}")
 
-        # 后台线程播放，避免阻塞
+            # 3) 仅在调用前歌单激活且允许恢复时启动歌单
+            if resume_playlist and was_active:
+                print("[play_file] Restoring playlist…")
+                self.play()
+            else:
+                print("[play_file] Not restoring playlist")
+
         threading.Thread(target=_play_once, daemon=True).start()
 
 

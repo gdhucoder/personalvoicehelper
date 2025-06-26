@@ -62,28 +62,59 @@ class AudioScheduler:
 
         heapq.heappush(self.queue, (-task.priority, task))
 
+    def pause_music(self):
+        """直接暂停背景歌单"""
+        self.audio_player.pause()
+
+    def resume_music(self):
+        """直接继续背景歌单"""
+        self.audio_player.play()
+
+    def next_track(self):
+        """跳到下一首"""
+        self.audio_player.next()
+
+    def prev_track(self):
+        """跳到上一首"""
+        self.audio_player.prev()
+
+    def pause_current(self):
+        """
+        手动暂停当前运行的任务，并把它入 paused_stack。
+        wake_and_recognize 中“暂停”命令就应该调用这个方法。
+        """
+        if self.running:
+            # 1) 先暂停任务（会调用 MP3Player.pause()）
+            asyncio.create_task(self.running.pause())
+            # 2) 入栈，等待后续 resume
+            if self.running.resumable:
+                self.paused_stack.append(self.running)
+            self.running = None
+
+
     async def loop(self):
         while True:
-            # start next if idle
+            # 1) idle 时启动下一个任务
             if self.running is None and self.queue:
                 _, nxt = heapq.heappop(self.queue)
                 nxt.start()
                 self.running = nxt
 
-            # preempt if higher priority arrives
+            # 2) 抢占逻辑：只暂停，不入栈
             if self.running and self.queue:
                 top_pri, top_task = self.queue[0]
                 if -top_pri > self.running.priority:
                     heapq.heappop(self.queue)
+                    # 仅暂停，不保存到 paused_stack
                     await self.running.pause()
-                    if self.running.resumable:
-                        self.paused_stack.append(self.running)
+                    # 切换到新任务
                     self.running = top_task
                     top_task.start()
 
-            # if done, resume last paused
+            # 3) 当前任务结束？恢复手动暂停的任务
             if self.running and self.running._task.done():
                 self.running = None
+                # 只恢复 paused_stack（只有手动pause的任务会在这里）
                 while self.paused_stack and self.running is None:
                     prev = self.paused_stack.pop()
                     await prev.resume()

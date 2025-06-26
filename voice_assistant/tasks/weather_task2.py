@@ -23,11 +23,12 @@ class WeatherTask(AsyncVoiceTask):
       2) TTS 生成 MP3
       3) 中断歌单播放并播放 TTS，结束后恢复
     """
-    def __init__(self):
+    def __init__(self, was_playing=False):
         super().__init__(name="Weather", priority=10, resumable=False)
         self.player = None
         self.api_key =  cfg.get('weather', 'api_key')
         self.base_url =  cfg.get('weather', 'base_url')
+        self.was_playing = was_playing
 
 
     async def execute(self):
@@ -42,7 +43,8 @@ class WeatherTask(AsyncVoiceTask):
         print(f"[WeatherTask] 生成 TTS 文件: {tts_file.name}")
 
         # --- 3) 播放 TTS 并自动恢复歌单 ---
-        self.player.play_file(tts_file, resume_playlist=True)
+        # 假设你的 MP3Player 有 is_playing() 方法
+        self.player.play_file(self.was_playing,tts_file, resume_playlist=True)
         print("[WeatherTask] 播放 TTS，任务完成")
 
     async def _query_weather(self) -> str:
