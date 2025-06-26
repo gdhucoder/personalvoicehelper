@@ -40,13 +40,26 @@ class AsyncVoiceTask:
             self._task.cancel()
 
 class AudioScheduler:
-    def __init__(self):
+    def __init__(self, mp3_dir: Path, loop_playlist: bool = True):
+
+        files = sorted(mp3_dir.glob("*.mp3"))
+        if not files:
+            raise FileNotFoundError(f"No mp3 under {mp3_dir}")
+
+        self.audio_player = MP3Player(
+            files,
+            loop=loop_playlist
+        )
 
         self.running: Optional[AsyncVoiceTask] = None
         self.paused_stack: List[AsyncVoiceTask] = []
         self.queue: List[tuple[int, AsyncVoiceTask]] = []
 
     def enqueue(self, task: AsyncVoiceTask):
+        # 注入同一个播放器
+        if hasattr(task, 'player'):
+            task.player = self.audio_player
+
         heapq.heappush(self.queue, (-task.priority, task))
 
     async def loop(self):
@@ -78,17 +91,13 @@ class AudioScheduler:
 
             await asyncio.sleep(0.05)
 
-
-
-
-
 class PlayMusicTask(AsyncVoiceTask):
-    def __init__(self, music_dir: Path):
+    def __init__(self):
         super().__init__(name="PlayMusic", priority=1, resumable=True)
-        files = sorted(music_dir.glob("*.mp3"))
-        if not files:
-            raise FileNotFoundError(f"No mp3 under {music_dir}")
-        self.player = MP3Player(files, loop=True)
+        # files = sorted(music_dir.glob("*.mp3"))
+        # if not files:
+        #     raise FileNotFoundError(f"No mp3 under {music_dir}")
+        self.player = None
 
     async def execute(self):
         print(f"[MusicTask] start, {len(self.player.files)} tracks")

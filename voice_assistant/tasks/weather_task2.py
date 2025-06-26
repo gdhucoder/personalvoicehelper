@@ -6,19 +6,15 @@ import configparser
 from pathlib import Path
 from uuid import uuid4
 
-from task_manager4 import AsyncVoiceTask, AudioScheduler
+from voice_assistant.tasks.task_manager4 import AsyncVoiceTask, AudioScheduler
 
 from voice_assistant.player.mp3_player import  MP3Player
 from datetime import datetime
 from voice_assistant.utils.tts_utils    import speech_synthesize
-import re
-import hashlib
-from dashscope.audio.tts_v2 import *
-import dashscope
 
 # 读取配置
 cfg = configparser.ConfigParser()
-cfg.read('../../env/config.ini')
+cfg.read('/home/hugd/privateprojects/personalvoicehelper/env/config.ini')
 
 class WeatherTask(AsyncVoiceTask):
     """
@@ -27,9 +23,9 @@ class WeatherTask(AsyncVoiceTask):
       2) TTS 生成 MP3
       3) 中断歌单播放并播放 TTS，结束后恢复
     """
-    def __init__(self, player: MP3Player):
+    def __init__(self):
         super().__init__(name="Weather", priority=10, resumable=False)
-        self.player = player
+        self.player = None
         self.api_key =  cfg.get('weather', 'api_key')
         self.base_url =  cfg.get('weather', 'base_url')
 
@@ -92,20 +88,42 @@ class WeatherTask(AsyncVoiceTask):
 
 # 使用示例
 if __name__ == "__main__":
-    import asyncio
 
-    # 初始化播放器（后台歌单）
-    player = MP3Player(list(Path("../mp3s").glob("*.mp3")), loop=True)
-    scheduler = AudioScheduler()
+    import sys
+
+    # 1) mp3 目录，可放几首 mp3 做背景歌单，也可留空
+    MP3_DIR = Path("/home/hugd/privateprojects/personalvoicehelper/voice_assistant/mp3s")
+
+    # 2) 初始化调度器，不自动播放背景歌单
+    scheduler = AudioScheduler(mp3_dir=MP3_DIR, loop_playlist=False)
+
 
     async def main():
-        # 启动歌单
-        player.play()
-        # 启动调度器
-        asyncio.create_task(scheduler.loop())
-        # Enqueue 天气任务
-        scheduler.enqueue(WeatherTask(player))
+        # 启动调度器循环
+        loop_task = asyncio.create_task(scheduler.loop())
+
+        # 3) 创建并入队 WeatherTask
+        wt = WeatherTask()
+        scheduler.enqueue(wt)
         # 等待完成
         await asyncio.sleep(120)
 
-    asyncio.run(main())
+        # 4) 等待任务真正启动
+        while wt._task is None:
+            await asyncio.sleep(0.05)
+        # 5) 等待 WeatherTask 执行结束
+        try:
+            await wt._task
+        except asyncio.CancelledError:
+            pass
+
+        print("✅ WeatherTask 已完成，退出程序")
+        # 取消调度器 loop 并退出
+        loop_task.cancel()
+
+
+    # 运行
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        sys.exit(0)

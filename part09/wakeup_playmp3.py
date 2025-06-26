@@ -9,7 +9,8 @@ import threading
 import time
 from pathlib import Path
 # 来自前面示例
-from voice_assistant.tasks.task_manager3 import AudioScheduler, PlayMusicTask
+from voice_assistant.tasks.task_manager4 import AudioScheduler, PlayMusicTask
+from voice_assistant.tasks.weather_task2 import WeatherTask
 
 from voice_assistant.recognize_speech import recognize_speech
 
@@ -67,7 +68,7 @@ def wake_and_recognize(loop: asyncio.AbstractEventLoop, scheduler: AudioSchedule
                 if "play" in text or "音乐" in text:
                     # 在 asyncio 调度器中创建任务
                     # 安全地把 MusicTask 加入主线程的 asyncio 调度器
-                    loop.call_soon_threadsafe(scheduler.enqueue, PlayMusicTask(Path("../voice_assistant/mp3s")))
+                    loop.call_soon_threadsafe(scheduler.enqueue, PlayMusicTask())
                 elif "暂停" in text or "pause" in text:
                     # 在主循环里创建一个 pause() 的协程任务
                     if isinstance(scheduler.running, PlayMusicTask):
@@ -91,6 +92,12 @@ def wake_and_recognize(loop: asyncio.AbstractEventLoop, scheduler: AudioSchedule
                             asyncio.create_task,
                             scheduler.running.cmd_stop()
                         )
+                elif "天气" in text or "weather" in text:
+                    # 将 WeatherTask 加入调度器
+                    loop.call_soon_threadsafe(
+                        scheduler.enqueue,
+                        WeatherTask()
+                    )
                 time.sleep(1)
 
     except KeyboardInterrupt:
@@ -105,7 +112,7 @@ def wake_and_recognize(loop: asyncio.AbstractEventLoop, scheduler: AudioSchedule
 
 # === 5. 启动 ===
 async def main():
-    scheduler = AudioScheduler()
+    scheduler = AudioScheduler(mp3_dir=Path("../voice_assistant/mp3s"), loop_playlist=True)
     # 启动调度器循环
     asyncio.create_task(scheduler.loop())
 
