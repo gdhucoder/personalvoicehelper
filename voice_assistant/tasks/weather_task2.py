@@ -60,7 +60,8 @@ class WeatherTask(AsyncVoiceTask):
         now = datetime.now()
 
         # 格式化时间戳
-        timestamp = now.strftime('%m月%d日 %H时%M分')
+        # timestamp = now.strftime('%m月%d日 %H时%M分')
+        timestamp = now.strftime('%m月%d日 %H时')
         # 发送 HTTP 请求
         response = requests.get(self.base_url, params=params)
         weather_shenzhen = ""
