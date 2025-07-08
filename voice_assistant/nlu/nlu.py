@@ -12,10 +12,12 @@ class CommandParser:
         # 意图到关键词列表的映射
         self.intents = {
             "play_music":       [r"播放(音乐)?", r"\bplay\b"],
-            "pause_music":      [r"暂停", r"\bpause\b"],
+            # stop -> pause
+            "pause_music":      [r"暂停", r"\bpause\b", r"停止(播放)?", r"\bstop\b"],
             "resume_music":     [r"继续", r"\bresume\b", r"恢复"],
-            "next_track":       [r"下一(曲|首)", r"\bnext\b"],
-            "prev_track":       [r"上一(曲|首)", r"\b(previous|prev)\b"],
+            "next_track":       [r"下一(曲|首|句)", r"\bnext\b"],
+            "prev_track":       [r"上一(曲|首|句)", r"\b(previous|prev)\b"],
+            # "stop_music":       [r"停止(播放)?", r"\bstop\b"],
             "stop_music":       [r"停止(播放)?", r"\bstop\b"],
             "weather":          [r"天气", r"\bweather\b"],
             "volume_up":        [r"音量(加|上)?", r"\b(vol(up|\+))\b", r"大声点", r"大点声"],

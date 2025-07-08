@@ -12,6 +12,9 @@ from pathlib import Path
 from voice_assistant.tasks.task_manager4 import AudioScheduler, PlayMusicTask
 from voice_assistant.tasks.weather_task2 import WeatherTask
 
+# nul parser
+from voice_assistant.nlu.nlu import CommandParser
+
 from voice_assistant.recognize_speech import recognize_speech
 
 # config parser
@@ -42,7 +45,7 @@ audio_stream = pa.open(
 
 def wake_and_recognize(loop: asyncio.AbstractEventLoop, scheduler: AudioScheduler):
     print("Listening for 'picovoice'...")
-
+    nlu_parser = CommandParser()
     try:
         while True:
             pcm = audio_stream.read(porcupine.frame_length, exception_on_overflow=False)
@@ -60,32 +63,31 @@ def wake_and_recognize(loop: asyncio.AbstractEventLoop, scheduler: AudioSchedule
                 from voice_assistant.recognize_speech.recognize_speech import recoginze_speech
                 recognized_command = recoginze_speech(audio_stream, timeout=3)
                 print(f"🗣️ 识别到: {recognized_command!r}")
-                print(recognized_command)
-                # 2) 调用 NLU
-                # intent, params = parser.parse(text)
-                # print(f"🔍 Intent={intent}, Params={params}")
+                # 2) call NLU
+                intent, params = nlu_parser.parse(recognized_command)
+                print(f"🔍 识别意图：Intent={intent}, Params={params}")
 
                 # 调用你助手的主逻辑模块
                 # 简单命令解析 —— 播放音乐
                 text = recognized_command
-                if "play" in text or "音乐" in text:
+                if intent == "play_music":
                     # 在 asyncio 调度器中创建任务
                     # 安全地把 MusicTask 加入主线程的 asyncio 调度器
                     loop.call_soon_threadsafe(scheduler.enqueue, PlayMusicTask())
-                elif "暂停" in text or "pause" in text:
+                elif intent == "pause_music":
                     # 在主循环里创建一个 pause() 的协程任务
                     # 直接暂停播放器
                     loop.call_soon_threadsafe(scheduler.pause_music)
-                elif "继续" in text or "resume" in text:
+                elif intent == "resume_music":
                     loop.call_soon_threadsafe(scheduler.resume_music)
-                elif "下一曲" in text or "next" in text:
+                elif intent == "next_track":
                     loop.call_soon_threadsafe(scheduler.next_track)
-                elif "上一曲" in text or "previous" in text:
+                elif intent == "prev_track":
                     loop.call_soon_threadsafe(scheduler.prev_track)
-                elif "停止" in text or "stop" in text:
+                elif intent == "stop_music":
                     # 停掉任务并停止播放器
                     loop.call_soon_threadsafe(scheduler.audio_player.pause_music)
-                elif "天气" in text or "weather" in text:
+                elif intent == "weather":
                     # 将 WeatherTask 加入调度器
                     was_playing = scheduler.audio_player.play_obj and scheduler.audio_player.play_obj.is_playing()
                     print(f"was_playing: {was_playing}")
