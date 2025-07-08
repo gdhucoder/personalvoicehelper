@@ -8,6 +8,9 @@
 *.userosscache
 *.sln.docstates
 *.xml
+
+voice_assistant/mp3s
+
 Thumbs.db
 .idea/
 /.vscode

@@ -61,6 +61,9 @@ def wake_and_recognize(loop: asyncio.AbstractEventLoop, scheduler: AudioSchedule
                 recognized_command = recoginze_speech(audio_stream, timeout=3)
                 print(f"🗣️ 识别到: {recognized_command!r}")
                 print(recognized_command)
+                # 2) 调用 NLU
+                # intent, params = parser.parse(text)
+                # print(f"🔍 Intent={intent}, Params={params}")
 
                 # 调用你助手的主逻辑模块
                 # 简单命令解析 —— 播放音乐
