@@ -11,9 +11,11 @@ from pathlib import Path
 # 来自前面示例
 from voice_assistant.tasks.task_manager4 import AudioScheduler, PlayMusicTask
 from voice_assistant.tasks.weather_task2 import WeatherTask
+from voice_assistant.tasks.play_audio_task import PlayAudioTask
 
 # nul parser
 from voice_assistant.nlu.nlu import CommandParser
+
 
 from voice_assistant.recognize_speech import recognize_speech
 
@@ -26,7 +28,7 @@ porcupine_access_key = config.get('listener', 'pvporcupine_access_key') # key
 
 custom_keyword_franky_path = config.get('listener', 'custom_keyword_franky')
 
-
+confirm_mp3_path = config.get('listener', 'confirm_mp3_path')
 
 
 porcupine = pvporcupine.create(keyword_paths=[custom_keyword_franky_path],
@@ -54,11 +56,21 @@ def wake_and_recognize(loop: asyncio.AbstractEventLoop, scheduler: AudioSchedule
             result = porcupine.process(pcm)
 
             if result >= 0:
+
                 # 获取当前日期和时间
                 now = datetime.now()
                 # 格式化为字符串
                 formatted_date = now.strftime("%Y-%m-%d %H:%M:%S")
                 print(f'🔔{formatted_date} 唤醒词检测到！执行唤醒动作...')
+
+                _was_playing = scheduler.audio_player.play_obj and scheduler.audio_player.play_obj.is_playing()
+                print(f"_was_playing: {_was_playing}")
+
+                confirm_mp3 = Path(confirm_mp3_path)
+                loop.call_soon_threadsafe(
+                    scheduler.enqueue,
+                    PlayAudioTask(confirm_mp3, was_playing=_was_playing)
+                )
 
                 from voice_assistant.recognize_speech.recognize_speech import recoginze_speech
                 recognized_command = recoginze_speech(audio_stream, timeout=3)

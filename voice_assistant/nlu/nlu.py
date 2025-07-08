@@ -32,7 +32,7 @@ class CommandParser:
             "search_web":       [r"搜索(.+)", r"search for (.+)"],
             "define_word":      [r"定义(.+)", r"what does (.+) mean"],
             "translate":        [r"翻译(.+)为?英文?", r"translate (.+) to (.+)"],
-            "help":             [r"帮助", r"\bhelp\b"],
+            "help":             [r"帮助", r"\bhelp\ "],
             "exit":             [r"(再见|拜拜)", r"\bbye\b"],
             "open_app":         [r"打开(.+)", r"launch (.+)"],
             "control_light":    [r"(打开|关闭)(客厅|卧室)灯", r"(turn on|turn off) lights"],
