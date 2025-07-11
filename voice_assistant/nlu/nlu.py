@@ -20,6 +20,7 @@ class CommandParser:
             # "stop_music":       [r"停止(播放)?", r"\bstop\b"],
             "stop_music":       [r"停止(播放)?", r"\bstop\b"],
             "weather":          [r"天气", r"\bweather\b"],
+            "chat_with_ai":     [r"请问"],
             "volume_up":        [r"音量(加|上)?", r"\b(vol(up|\+))\b", r"大声点", r"大点声"],
             "volume_down":      [r"音量(减|小)?", r"\b(vol(down|\-))\b", r"小声点", r"小点声"],
             "tts":              [r"说(.*)", r"\btell me\b"],  # capture text
@@ -96,7 +97,8 @@ if __name__ == "__main__":
         "小声点",
         "大点声",
         "小点声",
-        "foobar"
+        "foobar",
+        "请问"
     ]
     for t in tests:
         intent, params = parser.parse(t)
