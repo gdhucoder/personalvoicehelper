@@ -53,14 +53,30 @@ class AudioScheduler:
 
         self.running: Optional[AsyncVoiceTask] = None
         self.paused_stack: List[AsyncVoiceTask] = []
-        self.queue: List[tuple[int, AsyncVoiceTask]] = []
+        self.queue: List[tuple[int, int, AsyncVoiceTask]] = []
+        # 同优先级任务排序
+        self._counter = 0
 
     def enqueue(self, task: AsyncVoiceTask):
         # 注入同一个播放器
         if hasattr(task, 'player'):
             task.player = self.audio_player
+        # 每次入队都增加 counter，保证即使优先级相同也能通过 counter 排序
+        self._counter += 1
+        heapq.heappush(self.queue, (-task.priority, self._counter, task))
 
-        heapq.heappush(self.queue, (-task.priority, task))
+    def cancel_task(self, task: AsyncVoiceTask):
+        # 1) 如果是正在运行的任务
+        if self.running is task:
+            asyncio.create_task(task.cancel())
+            self.running = None
+        # 2) 如果在队列里，删掉它
+        else:
+            # 重建队列，过滤掉要取消的 task
+            self.queue = [
+                (pri, cnt, t) for (pri, cnt, t) in self.queue if t is not task
+            ]
+            heapq.heapify(self.queue)
 
     def pause_music(self):
         """直接暂停背景歌单"""
@@ -96,13 +112,13 @@ class AudioScheduler:
         while True:
             # 1) idle 时启动下一个任务
             if self.running is None and self.queue:
-                _, nxt = heapq.heappop(self.queue)
+                _,_, nxt = heapq.heappop(self.queue)
                 nxt.start()
                 self.running = nxt
 
             # 2) 抢占逻辑：只暂停，不入栈
             if self.running and self.queue:
-                top_pri, top_task = self.queue[0]
+                top_pri, _, top_task = self.queue[0]
                 if -top_pri > self.running.priority:
                     heapq.heappop(self.queue)
                     # 仅暂停，不保存到 paused_stack
