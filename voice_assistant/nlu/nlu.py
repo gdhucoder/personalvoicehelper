@@ -1,6 +1,7 @@
 # voice_assistant/nlu.py
 
 import re
+from datetime import datetime
 from typing import Tuple, Dict, Any
 
 class CommandParser:
@@ -64,6 +65,20 @@ class CommandParser:
                         num = self._extract_number(txt) or 3
                         direction = 1 if intent == "volume_up" else -1
                         return "set_volume", {"delta_db": direction * num}
+                    if intent == "get_date":
+                        now = datetime.now()
+                        weekday_map = ["一", "二", "三", "四", "五", "六", "日"]
+                        text = (
+                            f"今天是{now.year}年{now.month}月{now.day}日，"
+                            f"星期{weekday_map[now.weekday()]}。"
+                        )
+                        return "get_date", {"date_text": text}
+                    if intent == "get_time":
+                        now = datetime.now()
+                        hour = now.hour
+                        minute = now.minute
+                        time_text = f"现在是{hour}点{minute}分。"
+                        return "get_time", {"time_text": time_text}
                     return intent, {}
         if len(text) > 6 and not re.search(r"(音乐|天气|播放|暂停)", text):
             return  "chat_with_ai", {}
