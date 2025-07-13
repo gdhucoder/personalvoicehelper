@@ -20,7 +20,7 @@ class CommandParser:
             # "stop_music":       [r"停止(播放)?", r"\bstop\b"],
             "stop_music":       [r"停止(播放)?", r"\bstop\b"],
             "weather":          [r"天气", r"\bweather\b"],
-            "chat_with_ai":     [r"请问"],
+            "chat_with_ai":     [r"请问", r"你能(告诉我|说说)吗",r"我想(问|聊)", r"我们来聊",],
             "volume_up":        [r"音量(加|上)?", r"\b(vol(up|\+))\b", r"大声点", r"大点声"],
             "volume_down":      [r"音量(减|小)?", r"\b(vol(down|\-))\b", r"小声点", r"小点声"],
             "tts":              [r"说(.*)", r"\btell me\b"],  # capture text
@@ -65,7 +65,8 @@ class CommandParser:
                         direction = 1 if intent == "volume_up" else -1
                         return "set_volume", {"delta_db": direction * num}
                     return intent, {}
-
+        if len(text) > 6 and not re.search(r"(音乐|天气|播放|暂停)", text):
+            return  "chat_with_ai", {}
         # 3) 未匹配上
         return "unknown", {}
 
