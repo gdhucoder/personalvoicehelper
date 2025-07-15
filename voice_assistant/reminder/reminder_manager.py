@@ -95,7 +95,7 @@ class ReminderManager:
         r = self.reminders.get(rid)
         if not r:
             return
-        now = datetime.now().strftime("%H:%M")
+        now = datetime.now().strftime("%H点%M分")
         text = f"现在是{now}，提醒您：{r.message}"
         print(f"[ReminderManager] 🔔 Fire {r}")
         # 播报一次后，如果想每天重复就注释掉 next 两行
