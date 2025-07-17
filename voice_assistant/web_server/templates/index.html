@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Franky</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root{
+            --bg:#fef6f8;
+            --panel:#fff;
+            --accent:#ff85a2;
+            --accent-dark:#ff6b8b;
+            --text:#4a4a68;
+            --subtle:#9b9bb2;
+            --bot-bubble:#ffd9e2;
+            --user-bubble:#c8e7ff;
+        }
+        *{box-sizing:border-box;font-family:'Nunito',sans-serif;}
+        body{margin:0;height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#ffeef8 0%,#ffe0f0 100%);}
+        .kawaii-card{width:100%;max-width:420px;height:88vh;background:var(--panel);border-radius:32px;box-shadow:0 10px 30px rgba(255,133,162,.35);overflow:hidden;display:flex;flex-direction:column;animation:float 6s ease-in-out infinite;}
+        @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+        .header{background:linear-gradient(90deg,#ff85a2 0%,#ff6b8b 100%);padding:18px 0;color:#fff;font-size:20px;font-weight:700;text-align:center;letter-spacing:.5px;}
+        #status-container{flex:1;overflow-y:auto;padding:14px 18px;scroll-behavior:smooth;}
+        #status-container::-webkit-scrollbar{width:8px}
+        #status-container::-webkit-scrollbar-track{background:transparent}
+        #status-container::-webkit-scrollbar-thumb{border-radius:4px;background:linear-gradient(180deg,#ff9a9e,#fad0c4,#a18cd1);}
+        .msg-row{display:flex;align-items:flex-end;margin:10px 0}
+        .msg-row.user{justify-content:flex-end}
+        .msg-row.bot{justify-content:flex-start}
+        .avatar{width:34px;height:34px;border-radius:50%;margin:0 6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:20px;}
+        .bot .avatar{background:#ffd9e2;color:var(--accent-dark);}
+        .user .avatar{background:#c8e7ff;color:#528bff}
+        .bubble{max-width:75%;padding:10px 14px;border-radius:18px;font-size:14px;line-height:1.5;word-break:break-word;box-shadow:0 2px 6px rgba(0,0,0,.08);}
+        .bot .bubble{background:var(--bot-bubble);color:var(--text);border-bottom-left-radius:4px}
+        .user .bubble{background:var(--user-bubble);color:var(--text);border-bottom-right-radius:4px}
+        .input-section{padding:12px 18px 22px;background:#fff;border-top:1px solid #ffe0f0;}
+        textarea{width:100%;height:70px;resize:none;border:1px solid #ffd9e2;border-radius:14px;padding:10px 12px;font-size:15px;color:var(--text);background:#fff7fa;caret-color:#ff85a2;}
+        textarea:focus{outline:none;border-color:var(--accent)}
+        .send-btn{margin-top:8px;float:right;width:46px;height:46px;border:none;border-radius:50%;background:linear-gradient(135deg,#ff85a2,#ff6b8b);color:#fff;font-size:22px;cursor:pointer;transition:transform .2s;}
+        .send-btn:hover{transform:scale(1.12) rotate(-8deg)}.send-btn:active{transform:scale(.95)}
+        .toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:var(--accent-dark);color:#fff;padding:10px 20px;border-radius:20px;box-shadow:0 4px 14px rgba(255,107,139,.35);z-index:1000;opacity:0;transition:opacity .3s;pointer-events:none;}
+        .toast.show{opacity:1}
+    </style>
+</head>
+
+<body>
+    <div class="kawaii-card">
+        <header class="header">Franky</header>
+        <div id="status-container">
+            <div id="status">
+                <p style="text-align:center;color:var(--subtle);font-size:14px;">等待Franky上线中...</p>
+            </div>
+        </div>
+        <div class="input-section">
+            <textarea id="textInput" placeholder="对Franky说点什么吧..."></textarea>
+            <button class="send-btn" id="sendTextButton" title="发送">💌</button>
+        </div>
+    </div>
+    <div id="toast" class="toast">请输入文本哦~</div>
+
+<script>
+/* ========= 工具 ========= */
+function generateRandomString(len=6){
+    const chars='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    return [...Array(len)].map(()=>chars[Math.random()*chars.length|0]).join('');
+}
+const userId = generateRandomString();
+const socket = io(`http://10.1.51.67:5001/?user_id=${userId}`);
+
+/* ========= DOM ========= */
+const container = document.getElementById('status-container');
+const box       = document.getElementById('status');
+const input     = document.getElementById('textInput');
+const btn       = document.getElementById('sendTextButton');
+const toast     = document.getElementById('toast');
+
+/* 平滑滚动到底部 */
+function scrollBottom(){
+    container.scrollTop = container.scrollHeight;
+}
+
+/* ========= 表情映射 ========= */
+const emoMap={normal:'🤖',happy:'😊',sorry:'😵',love:'❤️',sleep:'💤'};
+function chooseEmoji(txt){
+    const low=txt.toLowerCase();
+    if(low.includes('谢谢')||low.includes('感谢')) return emoMap.happy;
+    if(low.includes('对不起')||low.includes('抱歉')) return emoMap.sorry;
+    if(low.includes('爱你')||low.includes('喜欢')) return emoMap.love;
+    if(low.includes('晚安')||low.includes('睡觉')) return emoMap.sleep;
+    return emoMap.normal;
+}
+
+/* ========= 消息渲染 ========= */
+function addMsg(who, txt, ts){
+    const row=document.createElement('div');
+    row.className='msg-row ' + who;
+    const face = who==='bot' ? chooseEmoji(txt) : '😊';
+    row.innerHTML=`
+        <div class="avatar">${face}</div>
+        <div class="bubble">
+            <div>${txt}</div>
+            <small style="display:block;margin-top:4px;font-size:11px;color:var(--subtle)">${ts}</small>
+        </div>`;
+    if(box.innerText.includes('等待')) box.innerHTML='';
+    box.appendChild(row);
+    scrollBottom(); // 保证最新可见
+}
+
+/* ========= 发送逻辑 ========= */
+function send(){
+    const txt=input.value.trim();
+    if(!txt){ toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),2000); return;}
+    addMsg('user', txt, new Date().toLocaleTimeString());
+    socket.emit('text_data',{text:txt});
+    input.value='';
+    scrollBottom();
+}
+btn.addEventListener('click', send);
+input.addEventListener('keydown',e=>{
+    if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); send(); }
+});
+
+/* ========= Socket 事件 ========= */
+socket.on('update_status', d=>{
+    addMsg('bot', d.message, d.timestamp);
+});
+socket.on('connect_error', ()=>{
+    addMsg('bot','Franky暂时找不到服务器，稍后再试试吧~', new Date().toLocaleTimeString());
+});
+
+/* 首屏加载完成后也滚动一次 */
+window.addEventListener('load', scrollBottom);
+</script>
+</body>
+</html>

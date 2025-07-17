@@ -23,6 +23,7 @@ from voice_assistant.nlu.nlu import CommandParser
 
 
 from voice_assistant.recognize_speech import recognize_speech
+from voice_assistant.web_server.send_socketinfo import WebSocketClient
 
 # config parser
 config = configparser.ConfigParser()
@@ -50,6 +51,17 @@ audio_stream = pa.open(
     input=True,
     frames_per_buffer=porcupine.frame_length)
 
+def handle_websocket_event(data):
+    """
+    处理 WebSocket 事件的自定义回调函数
+    """
+    print(f"Listener 收到 WebSocket 事件: {data}")
+    _websocket.send_status_update('info', f"{data}")
+
+# sockets
+_websocket = WebSocketClient(on_event_callback=handle_websocket_event)
+_websocket.connect()
+
 def wake_and_recognize(loop: asyncio.AbstractEventLoop, scheduler: AudioScheduler):
     print("Listening for 'picovoice'...")
     nlu_parser = CommandParser()
@@ -57,6 +69,8 @@ def wake_and_recognize(loop: asyncio.AbstractEventLoop, scheduler: AudioSchedule
 
     in_chat_session = False
     chat_session_history = []
+
+
 
     try:
         while True:
@@ -165,6 +179,7 @@ def wake_and_recognize(loop: asyncio.AbstractEventLoop, scheduler: AudioSchedule
         audio_stream.close()
         pa.terminate()
         porcupine.delete()
+
 
 
 # === 5. 启动 ===
