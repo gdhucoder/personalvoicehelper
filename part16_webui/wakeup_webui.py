@@ -119,23 +119,30 @@ class AssistantController:
             # 在 asyncio 调度器中创建任务
             # 安全地把 MusicTask 加入主线程的 asyncio 调度器
             self.scheduler.enqueue( PlayMusicTask())
+            self.ws.send_status_update('info', f"开始播放")
         elif intent == "pause_music":
             # 在主循环里创建一个 pause() 的协程任务
             # 直接暂停播放器
             self.scheduler.audio_player.pause()
+            self.ws.send_status_update('info', f"音乐已暂停")
         elif intent == "resume_music":
             self.scheduler.audio_player.play()
+            self.ws.send_status_update('info', f"开始播放")
         elif intent == "next_track":
             self.scheduler.audio_player.next()
+            self.ws.send_status_update('info', f"下一曲")
         elif intent == "prev_track":
             self.scheduler.audio_player.prev()
+            self.ws.send_status_update('info', f"上一曲")
         elif intent == "stop_music":
             # 停掉任务并停止播放器
             self.scheduler.audio_player.pause()
+            self.ws.send_status_update('info', f"停止播放")
         if intent == "chat_with_ai":
             # 构造对话历史
             if self._last_chat:
                 self.scheduler.cancel_task(self._last_chat)
+            self.ws.send_status_update('info', f"您说的是：{text}")
             message = [{
                          "role": "user",
                          "content": text
@@ -155,6 +162,7 @@ class AssistantController:
             at_time = params['when'].strftime("%H:%M")
             txt = params['text']
             msg = f"已为您设置提醒：{when.hour}点，{when.minute}分，{txt}"
+            self.ws.send_status_update('info', msg)
             self.rem_mgr.add(at_time, f"提醒：{when.hour}点，{when.minute}分，{txt}")
 
             self.scheduler.enqueue(SpeakTextTask(msg))
@@ -162,6 +170,8 @@ class AssistantController:
             idx = params['idx']
             ok = self.rem_mgr.remove(idx)
             msg = ok and f"已删除第{idx}条提醒" or "未找到提醒"
+
+            self.ws.send_status_update('info', msg)
             self.scheduler.enqueue(SpeakTextTask(msg))
         elif intent == "list_reminders":
             lst = self.rem_mgr.list()
@@ -169,6 +179,7 @@ class AssistantController:
                 self.scheduler.enqueue( SpeakTextTask("当前没有待提醒事项"))
             for i, rm in enumerate(lst, 1):
                 reminder_txt = f"第{i}条， {rm.at_time}, {rm.message}"
+                self.ws.send_status_update('info', reminder_txt)
                 self.scheduler.enqueue( SpeakTextTask(reminder_txt))
         elif intent == "weather":
             # 将 WeatherTask 加入调度器
@@ -177,16 +188,19 @@ class AssistantController:
             self.scheduler.enqueue(
                 WeatherTask(was_playing=was_playing)
             )
+            self.ws.send_status_update('info', "正在播报天气")
         elif intent == "get_date":
             # 将 WeatherTask 加入调度器
             self.scheduler.enqueue(
                 SpeakTextTask(params['date_text'])
             )
+            self.ws.send_status_update('info', f"当前日期：{params['date_text']}")
         elif intent == "get_time":
             # 将 WeatherTask 加入调度器
             self.scheduler.enqueue(
                 SpeakTextTask(params['time_text'])
             )
+            self.ws.send_status_update('info', f"当前时间：{params['time_text']}")
 
 if __name__ == "__main__":
     import sys
