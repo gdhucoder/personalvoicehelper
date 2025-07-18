@@ -104,7 +104,7 @@ class CommandParser:
                         return "list_reminders", {}
                     return intent, {}
 
-        if len(text) > 6 and not re.search(r"(音乐|天气|播放|暂停)", text):
+        if len(text) > 10 and not re.search(r"(音乐|天气|播放|暂停)", text):
             return  "chat_with_ai", {}
         # 3) 未匹配上
         return "unknown", {}
