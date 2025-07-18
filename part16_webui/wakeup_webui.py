@@ -12,9 +12,9 @@ from pathlib import Path
 from voice_assistant.reminder.reminder_manager import ReminderManager
 # 来自前面示例
 from voice_assistant.tasks.task_manager4 import AudioScheduler, PlayMusicTask
-from voice_assistant.tasks.weather_task2 import WeatherTask
+from voice_assistant.tasks.weather_task20250718 import WeatherTask
 from voice_assistant.tasks.play_audio_task import PlayAudioTask
-from voice_assistant.tasks.llm_task import LLMConversationTask
+from voice_assistant.tasks.llm_task20250718 import LLMConversationTask
 from voice_assistant.tasks.speak_task import SpeakTextTask
 
 
@@ -142,7 +142,7 @@ class AssistantController:
             # 构造对话历史
             if self._last_chat:
                 self.scheduler.cancel_task(self._last_chat)
-            self.ws.send_status_update('info', f"您说的是：{text}")
+            # self.ws.send_status_update('info', f"您说的是：{text}")
             message = [{
                          "role": "user",
                          "content": text
@@ -152,7 +152,7 @@ class AssistantController:
                             "content": "所有回答请务必在30个汉字以内"
                         },
             ]
-            task = LLMConversationTask(message)
+            task = LLMConversationTask(message, self.ws)
             # 将 LLM 对话任务注入
             self._last_chat = task
             self.scheduler.enqueue(task)
@@ -186,7 +186,7 @@ class AssistantController:
             was_playing = self.scheduler.audio_player.play_obj and self.scheduler.audio_player.play_obj.is_playing()
             print(f"was_playing: {was_playing}")
             self.scheduler.enqueue(
-                WeatherTask(was_playing=was_playing)
+                WeatherTask(was_playing=was_playing, ws_client=self.ws)
             )
             self.ws.send_status_update('info', "正在播报天气")
         elif intent == "get_date":
