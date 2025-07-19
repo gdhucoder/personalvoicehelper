@@ -34,8 +34,12 @@ class AssistantController:
         self._keyword_path = cfg.get('listener', 'custom_keyword_franky')
         self._confirm_mp3  = Path(cfg.get('listener', 'confirm_mp3_path'))
 
+        # ——— WebSocket 客户端 ———
+        self.ws = WebSocketClient(on_event_callback=self._on_ws_command)
+        self.ws.connect()
+
         # ——— 调度器 & 相关组件 ———
-        self.scheduler = AudioScheduler(mp3_dir=mp3_dir, loop_playlist=True)
+        self.scheduler = AudioScheduler(mp3_dir=mp3_dir, loop_playlist=True, ws_client=self.ws)
         self.parser    = CommandParser()
         self.rem_mgr   = ReminderManager(self.scheduler)
         self._last_chat = None  # 用于取消老的 LLM 任务
@@ -55,9 +59,7 @@ class AssistantController:
             frames_per_buffer=self.porcupine.frame_length
         )
 
-        # ——— WebSocket 客户端 ———
-        self.ws = WebSocketClient(on_event_callback=self._on_ws_command)
-        self.ws.connect()
+
 
         self.loop = None
 

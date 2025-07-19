@@ -73,8 +73,11 @@ class MP3Player:
         seg = self._load_segment()
         self.play_obj = self._play_segment(seg, offset_ms)
         self.paused = False
-        print(f"▶️ Now Playing [{self.idx+1}/{len(self.files)}]: {self.files[self.idx].name}")
+        msg = f"▶️ Now Playing [{self.idx+1}/{len(self.files)}]: {self.files[self.idx].name}"
+        print(msg)
+        self.ws_client.send_status_update('info', msg)
         self._start_monitor(seg.duration_seconds * 1000 - offset_ms)
+
 
     def play(self):
         with self.lock:

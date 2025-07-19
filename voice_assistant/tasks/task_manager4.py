@@ -40,15 +40,19 @@ class AsyncVoiceTask:
             self._task.cancel()
 
 class AudioScheduler:
-    def __init__(self, mp3_dir: Path, loop_playlist: bool = True):
+    def __init__(self, mp3_dir: Path, loop_playlist: bool = True, ws_client = None):
 
         files = sorted(mp3_dir.glob("*.mp3"))
         if not files:
             raise FileNotFoundError(f"No mp3 under {mp3_dir}")
+        # add ws_client
+        self.ws_client = ws_client
 
         self.audio_player = MP3Player(
             files,
-            loop=loop_playlist
+            loop=loop_playlist,
+            vol_db = 0,
+            ws_client=self.ws_client
         )
 
         self.running: Optional[AsyncVoiceTask] = None
@@ -56,6 +60,7 @@ class AudioScheduler:
         self.queue: List[tuple[int, int, AsyncVoiceTask]] = []
         # 同优先级任务排序
         self._counter = 0
+
 
     def enqueue(self, task: AsyncVoiceTask):
         # 注入同一个播放器
