@@ -99,7 +99,7 @@ class ReminderManager:
         text = f"现在是{now}，提醒您：{r.message}"
         print(f"[ReminderManager] 🔔 Fire {r}")
         # 播报一次后，如果想每天重复就注释掉 next 两行
-        self.scheduler.enqueue(SpeakTextTask(text, priority=20))
+        self.scheduler.enqueue(SpeakTextTask(text, priority=20,resumable=True))
         # 如果只提醒一次，取消并移除
         # schedule.cancel_job(self.jobs.pop(rid))
         # self.reminders.pop(rid, None)

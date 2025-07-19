@@ -139,12 +139,13 @@ class AudioScheduler:
             await asyncio.sleep(0.05)
 
 class PlayMusicTask(AsyncVoiceTask):
-    def __init__(self):
+    def __init__(self, ws_client = None):
         super().__init__(name="PlayMusic", priority=1, resumable=True)
         # files = sorted(music_dir.glob("*.mp3"))
         # if not files:
         #     raise FileNotFoundError(f"No mp3 under {music_dir}")
         self.player = None
+        self.ws_client = ws_client
 
     async def execute(self):
         print(f"[MusicTask] start, {len(self.player.files)} tracks")

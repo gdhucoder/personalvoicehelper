@@ -1,4 +1,4 @@
-# mp3_player.py
+# mp3_player20250719.py
 import simpleaudio as sa
 from pydub import AudioSegment
 import threading, time
@@ -73,7 +73,9 @@ class MP3Player:
         seg = self._load_segment()
         self.play_obj = self._play_segment(seg, offset_ms)
         self.paused = False
-        print(f"▶️ Now Playing [{self.idx+1}/{len(self.files)}]: {self.files[self.idx].name}")
+        msg = f"▶️ Now Playing [{self.idx+1}/{len(self.files)}]: {self.files[self.idx].name}"
+        print(msg)
+        self.ws_client.send_status_update('info', msg)
         self._start_monitor(seg.duration_seconds * 1000 - offset_ms)
 
     def play(self):
@@ -201,8 +203,6 @@ class MP3Player:
                 if self.play_obj:
                     self.play_obj.stop()
                     self.play_obj = None
-                # if was_active:
-                #     self.pause()
 
             print(f"[play_file] was_active={was_active}, resume_playlist={resume_playlist}")
 
@@ -220,7 +220,7 @@ class MP3Player:
 
             # 3) 仅在调用前歌单激活且允许恢复时启动歌单
             if resume_playlist and was_active:
-                print(f"[play_file] Restoring playlist… time @ {self.offset_ms}ms")
+                print("[play_file] Restoring playlist…")
                 self.play()
             else:
                 print("[play_file] Not restoring playlist")

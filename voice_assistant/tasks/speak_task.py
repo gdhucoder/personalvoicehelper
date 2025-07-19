@@ -44,7 +44,7 @@ class SpeakTextTask(AsyncVoiceTask):
         self._was_playing = bool(
             self.player.play_obj and self.player.play_obj.is_playing()
         )
-
+        print(f"[SpeakTextTask] mp3播放器是否在播放：{self._was_playing}")
         # 2) 合成文字为 MP3（阻塞操作放 executor）
         loop = asyncio.get_running_loop()
         mp3_path: Path = await loop.run_in_executor(
@@ -58,11 +58,17 @@ class SpeakTextTask(AsyncVoiceTask):
         # 小延迟让 player 准备好
         await asyncio.sleep(0.05)
         print(f"[SpeakTextTask] 播报：{self.text!r}")
+        # add 20250719
+        if self._was_playing:
+            self.player.pause()
+            print(f"[SpeakTextTask] player.pause()")
+
         self.player.play_file(
             was_playing=self._was_playing,
             path=mp3_path,
             resume_playlist=True
         )
+
         # <—— 新增：根据文件时长同步等待
         seg = await asyncio.get_running_loop().run_in_executor(
             None, AudioSegment.from_file, mp3_path
