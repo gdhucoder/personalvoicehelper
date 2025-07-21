@@ -8,8 +8,14 @@
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         :root{
-            --bg:#fef6f8;--panel:#fff;--accent:#ff85a2;--accent-dark:#ff6b8b;
-            --text:#4a4a68;--subtle:#9b9bb2;--bot-bubble:#ffd9e2;--user-bubble:#c8e7ff;
+            --bg:#fef6f8;
+            --panel:#fff;
+            --accent:#ff85a2;
+            --accent-dark:#ff6b8b;
+            --text:#4a4a68;
+            --subtle:#9b9bb2;
+            --bot-bubble:#ffd9e2;
+            --user-bubble:#c8e7ff;
         }
         *{box-sizing:border-box;font-family:'Nunito',sans-serif;}
         body{margin:0;height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#ffeef8 0%,#ffe0f0 100%);}
@@ -29,58 +35,13 @@
         .bubble{max-width:75%;padding:10px 14px;border-radius:18px;font-size:14px;line-height:1.5;word-break:break-word;box-shadow:0 2px 6px rgba(0,0,0,.08);}
         .bot .bubble{background:var(--bot-bubble);color:var(--text);border-bottom-left-radius:4px}
         .user .bubble{background:var(--user-bubble);color:var(--text);border-bottom-right-radius:4px}
-        .bubble img{max-width:100%;border-radius:10px;margin-top:4px}
-
-        /* ===== 合并后的输入区域 ===== */
         .input-section{padding:12px 18px 22px;background:#fff;border-top:1px solid #ffe0f0;}
-        .input-box{
-            position:relative;
-            display:flex;
-            align-items:center;
-            border:1px solid #ffd9e2;
-            border-radius:14px;
-            background:#fff7fa;
-            transition:border-color .2s;
-        }
-        .input-box:focus-within{border-color:var(--accent);}
-        textarea{
-            flex:1;
-            height:70px;
-            resize:none;
-            border:none;
-            outline:none;
-            padding:10px 12px;
-            font-size:15px;
-            color:var(--text);
-            background:transparent;
-            caret-color:#ff85a2;
-        }
-        .btn-group{
-            display:flex;
-            gap:6px;
-            margin:0 4px 0 0;
-            align-items:center;
-        }
-        .btn-group button{
-            width:36px;
-            height:36px;
-            border:none;
-            border-radius:50%;
-            background:linear-gradient(135deg,#ff85a2,#ff6b8b);
-            color:#fff;
-            font-size:18px;
-            cursor:pointer;
-            transition:transform .2s;
-            display:flex;
-            align-items:center;
-            justify-content:center;
-        }
-        .btn-group button:hover{transform:scale(1.12) rotate(-8deg);}
-        .btn-group button:active{transform:scale(.95);}
-        /* =========================== */
-
+        textarea{width:100%;height:70px;resize:none;border:1px solid #ffd9e2;border-radius:14px;padding:10px 12px;font-size:15px;color:var(--text);background:#fff7fa;caret-color:#ff85a2;}
+        textarea:focus{outline:none;border-color:var(--accent)}
+        .send-btn{margin-top:8px;float:right;width:46px;height:46px;border:none;border-radius:50%;background:linear-gradient(135deg,#ff85a2,#ff6b8b);color:#fff;font-size:22px;cursor:pointer;transition:transform .2s;}
+        .send-btn:hover{transform:scale(1.12) rotate(-8deg)}.send-btn:active{transform:scale(.95)}
         .toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:var(--accent-dark);color:#fff;padding:10px 20px;border-radius:20px;box-shadow:0 4px 14px rgba(255,107,139,.35);z-index:1000;opacity:0;transition:opacity .3s;pointer-events:none;}
-        .toast.show{opacity:1;}
+        .toast.show{opacity:1}
     </style>
 </head>
 
@@ -92,23 +53,15 @@
                 <p style="text-align:center;color:var(--subtle);font-size:14px;">等待Franky上线中...</p>
             </div>
         </div>
-
-        <!-- 合并后的输入框+按钮 -->
         <div class="input-section">
-            <div class="input-box">
-                <textarea id="textInput" placeholder="对Franky说点什么吧..."></textarea>
-                <div class="btn-group">
-                    <button class="img-btn" id="imgBtn" title="发送图片">📷</button>
-                    <button class="send-btn" id="sendTextButton" title="发送">💌</button>
-                </div>
-            </div>
-            <input type="file" id="fileInput" accept="image/*" style="display:none">
+            <textarea id="textInput" placeholder="对Franky说点什么吧..."></textarea>
+            <button class="send-btn" id="sendTextButton" title="发送">💌</button>
         </div>
     </div>
-    <div id="toast" class="toast"></div>
+    <div id="toast" class="toast">请输入文本哦~</div>
 
 <script>
-/* ========= 通用工具 ========= */
+/* ========= 工具 ========= */
 function generateRandomString(len=6){
     const chars='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     return [...Array(len)].map(()=>chars[Math.random()*chars.length|0]).join('');
@@ -120,12 +73,10 @@ const socket = io(`http://10.1.51.67:5001/?user_id=${userId}`);
 const container = document.getElementById('status-container');
 const box       = document.getElementById('status');
 const input     = document.getElementById('textInput');
-const sendBtn   = document.getElementById('sendTextButton');
-const imgBtn    = document.getElementById('imgBtn');
-const fileInput = document.getElementById('fileInput');
+const btn       = document.getElementById('sendTextButton');
 const toast     = document.getElementById('toast');
 
-/* 滚动到底部 */
+/* 平滑滚动到底部 */
 function scrollBottom(){
     container.scrollTop = container.scrollHeight;
 }
@@ -142,65 +93,38 @@ function chooseEmoji(txt){
 }
 
 /* ========= 消息渲染 ========= */
-function addMsg(who, content, ts){
+function addMsg(who, txt, ts){
     const row=document.createElement('div');
     row.className='msg-row ' + who;
-    const face = who==='bot' ? chooseEmoji(content) : '😊';
-    const isImg = content.startsWith('data:image');
-    const inner = isImg ? `<img src="${content}" alt="图片">` : content;
+    const face = who==='bot' ? chooseEmoji(txt) : '😊';
     row.innerHTML=`
         <div class="avatar">${face}</div>
         <div class="bubble">
-            ${inner}
+            <div>${txt}</div>
             <small style="display:block;margin-top:4px;font-size:11px;color:var(--subtle)">${ts}</small>
         </div>`;
     if(box.innerText.includes('等待')) box.innerHTML='';
     box.appendChild(row);
-    scrollBottom();
+    scrollBottom(); // 保证最新可见
 }
 
 /* ========= 发送逻辑 ========= */
-function showToast(msg){
-    toast.textContent=msg;
-    toast.classList.add('show');
-    setTimeout(()=>toast.classList.remove('show'),2000);
-}
-
-function sendText(){
+function send(){
     const txt=input.value.trim();
-    if(!txt){ showToast('请输入文字'); return; }
+    if(!txt){ toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),2000); return;}
     addMsg('user', txt, new Date().toLocaleTimeString());
     socket.emit('text_data',{text:txt});
     input.value='';
     scrollBottom();
 }
-
-sendBtn.addEventListener('click', sendText);
+btn.addEventListener('click', send);
 input.addEventListener('keydown',e=>{
-    if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); sendText(); }
-});
-
-/* ========= 图片发送 ========= */
-imgBtn.addEventListener('click',()=>fileInput.click());
-fileInput.addEventListener('change',()=>{
-    const file=fileInput.files[0];
-    if(!file || !file.type.startsWith('image/')){ showToast('请选择图片'); return; }
-    const reader=new FileReader();
-    reader.onload=e=>{
-        const base64=e.target.result;
-        addMsg('user', base64, new Date().toLocaleTimeString());
-        socket.emit('image_data',{image:base64});
-        fileInput.value='';
-    };
-    reader.readAsDataURL(file);
+    if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); send(); }
 });
 
 /* ========= Socket 事件 ========= */
 socket.on('update_status', d=>{
-    addMsg('bot', d.message, new Date().toLocaleTimeString());
-});
-socket.on('image_reply', d=>{
-    addMsg('bot', d.image || d.message, new Date().toLocaleTimeString());
+    addMsg('bot', d.message, d.timestamp);
 });
 socket.on('connect_error', ()=>{
     addMsg('bot','Franky暂时找不到服务器，稍后再试试吧~', new Date().toLocaleTimeString());

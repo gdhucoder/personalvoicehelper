@@ -26,6 +26,7 @@ class CommandParser:
             "volume_up":        [r"音量(加|上)?", r"\b(vol(up|\+))\b", r"大声点", r"大点声"],
             "volume_down":      [r"音量(减|小)?", r"\b(vol(down|\-))\b", r"小声点", r"小点声"],
             "tts":              [r"说(.*)", r"\btell me\b"],  # capture text
+            "image_understand":  [r"这个图(.*)"],
             "get_time":         [r"现在.*点", r"\btime\b"],
             "get_date":         [r"今.*(日期|几号)", r"\bdate\b"],
             "set_timer":        [r"定时(\d+)分钟", r"set a (\d+) minute timer"],
@@ -349,6 +350,7 @@ if __name__ == "__main__":
         "提醒我后天下午两点面试",
         "提醒我明天下午两点面试",
         "提醒我34分钟后面试",
+        "这个图说的是什么",
         # "提醒我十五分钟后去喝水",
         # "提醒我一小时后去洗手",
         # "提醒我十二点去洗手",
