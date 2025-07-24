@@ -10,6 +10,7 @@
 *.xml
 
 voice_assistant/mp3s
+voice_assistant/resource/workcontact
 
 Thumbs.db
 .idea/
