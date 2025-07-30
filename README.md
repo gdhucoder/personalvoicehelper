@@ -105,12 +105,6 @@ python3 assistant/main.py
 
 ## 🤝 贡献｜Contributing
 
-- Fork 本仓库
-
-- 新增 Feature 分支(git checkout -b feat/awesome)
-
-- 提交 PR
-
 - 大家一起让 Franky 变得更可爱！
 
 ## 📄 许可证｜License
