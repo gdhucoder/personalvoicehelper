@@ -61,10 +61,15 @@ class WeatherTask(AsyncVoiceTask):
         now = datetime.now()
 
         # 格式化时间戳
-        # timestamp = now.strftime('%m月%d日 %H时%M分')
-        timestamp = now.strftime('%m月%d日 %H时')
+        timestamp = now.strftime('%m月%d日 %H时%M分')
+        # timestamp = now.strftime('%m月%d日 %H时')
         # 发送 HTTP 请求
-        response = requests.get(self.base_url, params=params)
+        try:
+            # 超时时间设置为5秒
+            response = requests.get(self.base_url, params=params, timeout=5)
+        except requests.exceptions.Timeout:
+            return "暂未获取到天气信息"
+
         weather_shenzhen = ""
         # 检查响应状态
         if response.status_code == 200:
